@@ -1,0 +1,118 @@
+#!/usr/bin/env python3
+
+from threading import Thread
+import queue
+from bs4 import BeautifulSoup
+import requests
+import sys
+import json
+
+GROUP_URL = "http://steamcommunity.com/groups/{}/memberslistxml/?xml=1"
+GROUPID_URL = "http://steamcommunity.com/gid/{}/memberslistxml/?xml=1"
+PLAYER_URL = "http://steamcommunity.com/profiles/{}/?xml=1"
+
+
+def getText(el):
+    if el:
+        return el.text
+    else:
+        return ""
+
+
+# Takes a BeautifulSoup element and retrieves the text contents of
+# sub-elements, returning them in a dict from sub-element-name ->
+# contents
+def elGetValues(el, subels):
+    out = {}
+    for k in subels:
+        out[k] = getText(el.find(k))
+
+    return out
+
+
+def fetchPlayer(steamid):
+    player_xml = requests.get(PLAYER_URL.format(steamid)).text
+    player_data = BeautifulSoup(player_xml, "xml")
+    profile = player_data.find("profile")
+
+    # steamID is the player's name, steamID64 is the number
+    out = {
+        'name': getText(profile.find("steamID"))
+    }
+
+    player_vals = [
+        'onlineState',
+        'stateMessage',
+        'privacyState',
+        'visibilityState',
+        'vacBanned',
+        'tradeBanState',
+        'isLimitedAccount'
+    ]
+
+    for k in player_vals:
+        out[k] = getText(profile.find(k))
+
+    in_game_info = player_data.find("inGameInfo")
+    if in_game_info:
+        out.update(elGetValues(in_game_info, ['gameName', 'gameLink']))
+
+    primary_group = player_data.select("groups group[isPrimary=1]")
+    if primary_group:
+        out.update(elGetValues(primary_group[0], ['groupID64', 'groupName']))
+
+    return out
+
+
+def fetchManyPlayers(q, output_dict):
+    while True:
+        steamid = ""
+        try:
+            steamid = q.get(block=False)
+        except queue.Empty:
+            break
+
+        data = fetchPlayer(steamid)
+        output_dict[steamid] = data
+
+
+if len(sys.argv) == 1:
+    print("Usage: {} steamGroupId".format(sys.argv[0]))
+    sys.exit(1)
+
+group_id = sys.argv[1]
+
+group_req = requests.get(GROUP_URL.format(group_id))
+if group_req.status_code != 200:
+    group_req = requests.get(GROUPID_URL.format(group_id))
+
+    if group_req.status_code != 200:
+        print("Group \"{}\" not found.".format(group_id))
+        sys.exit(1)
+
+group_data = BeautifulSoup(group_req.text, "xml")
+
+group_details = group_data.find("groupDetails")
+
+out = elGetValues(group_details, ['memberCount',
+                                  'membersInChat',
+                                  'membersInGame',
+                                  'membersOnline'])
+
+players = {}
+steamids_to_fetch = queue.Queue()
+for steamid in map(getText, group_data.select("members steamID64")):
+    steamids_to_fetch.put(steamid)
+
+fetchers = []
+for i in range(10):
+    t = Thread(target=fetchManyPlayers,
+               args=[steamids_to_fetch, players])
+    t.start()
+    fetchers.append(t)
+
+for t in fetchers:
+    t.join()
+
+out['players'] = players
+print(json.dumps(out))
