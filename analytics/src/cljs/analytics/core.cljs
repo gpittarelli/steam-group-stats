@@ -34,6 +34,8 @@
 
     (set! (.-tickFormat time-axis) "%b %d %H:%M")
     (set! (.-title time-axis) "Time")
+    (set! (.-timePeriod time-axis) js/d3.time.hours)
+    (set! (.-timeInterval time-axis) 6)
 
     (add-series chart ingame-axis time-axis
                 "online" "Online Members")
