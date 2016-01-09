@@ -22,11 +22,27 @@
   :source-paths ["src/clj"]
 
   :plugins [[lein-cljsbuild "1.1.2"]]
+
+  :prep-tasks ["compile" ["cljsbuild" "once"]]
   :cljsbuild
   {:builds
-   [{:source-paths ["src/cljs"]
+   {:dev
+    {:source-paths ["src/cljs"]
+     :jar true
+     :compiler
+     {:output-to "target/public/javascript/main-debug.js"
+      :output-dir "target/public/javascript/out-debug/"
+      :source-map "target/public/javascript/main-debug.js.map"
+      :optimizations :whitespace}}
+
+    :prod
+    {:source-paths ["src/cljs"]
+     :jar true
      :compiler
      {:output-to "target/public/javascript/main.js"
       :output-dir "target/public/javascript/out/"
       :source-map "target/public/javascript/main.js.map"
-      :optimizations :advanced}}]})
+      :optimizations :advanced}}}}
+
+
+  :profiles {:uberjar {:aot :all}})
