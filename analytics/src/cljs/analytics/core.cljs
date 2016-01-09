@@ -1,11 +1,18 @@
 (ns analytics.core
-  (:require-macros [cljs.core.async.macros :refer [go]])
+  (:require-macros [cljs.core.async.macros :refer [go go-loop]])
   (:require [cljsjs.d3]
             [cljsjs.dimple]
             [cljs-http.client :as http]
-            [cljs.core.async :refer [put! chan <!]]))
+            [cljs.core.async :refer [put! chan <!]]
+            [goog.events :as events]))
 
 (enable-console-print!)
+
+(defn listen [el type]
+  (let [out (chan)]
+    (events/listen el type
+                   (fn [e] (put! out e)))
+        out))
 
 (defn- epoch->js-epoch [x] (* 1000 x))
 
@@ -46,6 +53,12 @@
     (doto chart
       (.setMargins 50 40 10 100)
       (.draw))
+
+    (let [resize (listen js/window "resize")]
+      (go-loop []
+        (<! resize)
+        (.draw chart 0 true)
+        (recur)))
 
     (-> (.-shapes legend)
         (.selectAll "rect")
