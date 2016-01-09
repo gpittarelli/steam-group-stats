@@ -3,6 +3,7 @@
 from threading import Thread
 import queue
 from bs4 import BeautifulSoup
+import time
 import requests
 import sys
 import json
@@ -115,4 +116,5 @@ for t in fetchers:
     t.join()
 
 out['players'] = players
+out['time'] = int(time.time()) # UTC Seconds since epoch
 print(json.dumps(out))
