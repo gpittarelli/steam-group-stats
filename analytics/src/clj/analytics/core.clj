@@ -54,7 +54,6 @@
   (let [data (map (comp json-read slurp) args)
         analysis (mapv analyze data)]
     (println "analysis of " (count analysis) "samples done.")
-    (println analysis)
     (reset! results analysis)
     (run-server #'app {:port 8080})
     (println "listening on 8080")))
