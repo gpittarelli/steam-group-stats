@@ -13,7 +13,11 @@
   (json/read-str str :key-fn keyword))
 
 (defn- analyze [data]
-  (let [players (vals (:players data))]
+  (let [players (vals (:players data))
+        games (->> players
+                   (filter #(contains? % :gameName))
+                   (map :gameName)
+                   frequencies)]
     {:online (:membersOnline data)
      :total (:memberCount data)
      :ingame (:membersInGame data)
@@ -27,10 +31,8 @@
                           (filter #(contains? % :groupName))
                           (map :groupName)
                           frequencies)
-     :games (->> players
-                 (filter #(contains? % :gameName))
-                 (map :gameName)
-                 frequencies)
+     :games games
+     :intf2 (get games "Team Fortress 2")
      :vac (count (filter :vacBanned players))
      :vacced (vec (filter :vacBanned players))}))
 
