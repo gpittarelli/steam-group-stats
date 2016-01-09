@@ -29,28 +29,22 @@
         chart (dimple.chart. svg (clj->js data))
         legend (.addLegend chart 60 10 500 20 "right")
         time-axis (.addAxis chart "x" nil nil "time")
-        ingame-axis (add-series chart "y" time-axis
-                                "ingame" "Ingame Members")]
+
+        members-axis (add-series chart "y" time-axis
+                                 "total" "Total Members")]
 
     (set! (.-tickFormat time-axis) "%b %d %H:%M")
     (set! (.-title time-axis) "Time")
     (set! (.-timePeriod time-axis) js/d3.time.hours)
     (set! (.-timeInterval time-axis) 6)
 
-    (add-series chart ingame-axis time-axis
-                "online" "Online Members")
-
-    (add-series chart ingame-axis time-axis
-                "total" "Total Members")
-
-    (add-series chart ingame-axis time-axis
-                "trade-bans" "Trade Banned Members")
-
-    (add-series chart ingame-axis time-axis
-                "vac" "VAC Banned Members")
-
-    (add-series chart ingame-axis time-axis
-                "limited_accounts" "Limited Account Members")
+    (doto chart
+      (add-series members-axis time-axis "online" "Online")
+      (add-series members-axis time-axis "ingame" "Ingame Members")
+      (add-series members-axis time-axis "intf2" "In TF2")
+      (add-series members-axis time-axis "trade-bans" "Trade Banned")
+      (add-series members-axis time-axis "vac" "VAC Banned")
+      (add-series members-axis time-axis "limited_accounts" "Limited Account"))
 
     (doto chart
       (.setMargins 50 40 10 100)
