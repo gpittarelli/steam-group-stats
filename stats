@@ -117,4 +117,21 @@ for t in fetchers:
 
 out['players'] = players
 out['time'] = int(time.time()) # UTC Seconds since epoch
+
+int_keys = [
+    'membersOnline',
+    'membersInChat',
+    'membersInGame',
+    'memberCount'
+]
+
+for k in int_keys:
+    out[k] = int(out[k])
+
+players = out['players']
+for k, p in players.items():
+    p['tradeBanState'] = (p['tradeBanState'] != "None")
+    p['isLimitedAccount'] = (p['isLimitedAccount'] == "1")
+    p['vacBanned'] = (p['vacBanned'] == "1")
+
 print(json.dumps(out))
