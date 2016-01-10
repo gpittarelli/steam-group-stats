@@ -8,7 +8,8 @@
             [compojure.route :as route]
             [org.httpkit.server :refer [run-server]]
             [clojure.java.io :as io]
-            [me.raynes.fs :as fs])
+            [me.raynes.fs :as fs]
+            [clojure-watch.core :refer [start-watch]])
   (:gen-class))
 
 (defn- json-read [str]
@@ -68,12 +69,23 @@
       (println "Error:" data-dir-path "is not a directory")
       (System/exit 2))
 
-    (let [analysis (->> (fs/glob data-dir "*.json")
-                        (map (comp json-read slurp))
-                        (map analyze)
+    (let [analyze-file (comp analyze json-read slurp)
+          analysis (->> (fs/glob data-dir "*.json")
+                        (map analyze-file)
                         (map #(-> [(:time %) %]))
                         (into {}))]
       (println "analysis of" (count (vals analysis)) "samples done.")
       (reset! results analysis)
+
+      (start-watch [{:path data-dir-path
+                     :event-types [:create :modify]
+                     :callback
+                     (fn [event filename]
+                       (when (.endsWith filename ".json")
+                         (let [new-data (analyze-file filename)]
+                           (println "Load new sample data from" filename
+                                    "time:" (:time new-data))
+                           (swap! results assoc (:time new-data) new-data))))}])
+
       (run-server #'app {:port 8080})
       (println "listening on 8080"))))

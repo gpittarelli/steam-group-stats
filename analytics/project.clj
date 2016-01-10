@@ -13,6 +13,7 @@
                  [incanter "1.5.6"]
                  [org.clojure/data.json "0.2.6"]
                  [me.raynes/fs "1.4.6"]
+                 [clojure-watch "0.1.11"]
 
                  [org.clojure/clojurescript "1.7.170"]
                  [org.clojure/core.async "0.2.374"]
