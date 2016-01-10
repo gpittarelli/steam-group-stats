@@ -6,7 +6,9 @@
                                              wrap-transit-params]]
             [compojure.core :refer [GET defroutes context]]
             [compojure.route :as route]
-            [org.httpkit.server :refer [run-server]])
+            [org.httpkit.server :refer [run-server]]
+            [clojure.java.io :as io]
+            [me.raynes.fs :as fs])
   (:gen-class))
 
 (defn- json-read [str]
@@ -44,18 +46,34 @@
   (GET "/main.js" [] (slurp "target/public/javascript/main.js"))
   (GET "/main.js.map" [] (slurp "target/public/javascript/main.js.map"))
   (context "/api" []
-    (GET "/data" [] (response @results)))
+    (GET "/data" [] (response (vals @results))))
   (route/not-found "Not found"))
 
-(def app
+(def ^:private app
   (-> app-routes
       (wrap-transit-params {:opts {}})
       (wrap-transit-response {:encoding :json, :opts {}})))
 
-(defn -main [& args]
-  (let [data (map (comp json-read slurp) args)
-        analysis (mapv analyze data)]
-    (println "analysis of " (count analysis) "samples done.")
-    (reset! results analysis)
-    (run-server #'app {:port 8080})
-    (println "listening on 8080")))
+(defn- usage []
+  (println "Expected Arguments: <data-dir>"))
+
+(defn -main [& [data-dir-path & args]]
+  (when-not data-dir-path
+    (usage)
+    (System/exit 1))
+
+  (let [data-dir (fs/file data-dir-path)]
+    (when-not (fs/directory? data-dir)
+      (usage)
+      (println "Error:" data-dir-path "is not a directory")
+      (System/exit 2))
+
+    (let [analysis (->> (fs/glob data-dir "*.json")
+                        (map (comp json-read slurp))
+                        (map analyze)
+                        (map #(-> [(:time %) %]))
+                        (into {}))]
+      (println "analysis of" (count (vals analysis)) "samples done.")
+      (reset! results analysis)
+      (run-server #'app {:port 8080})
+      (println "listening on 8080"))))
