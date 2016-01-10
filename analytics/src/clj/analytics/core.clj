@@ -20,7 +20,11 @@
         games (->> players
                    (filter #(contains? % :gameName))
                    (map :gameName)
-                   frequencies)]
+                   frequencies)
+        groups (->> players
+                    (filter #(contains? % :groupName))
+                    (map :groupName)
+                    frequencies)]
     {:online (:membersOnline data)
      :total (:memberCount data)
      :ingame (:membersInGame data)
@@ -30,11 +34,7 @@
      :visibility-states (frequencies (map :visibilityState players))
      :limited-accounts (frequencies (map :isLimitedAccount players))
      :trade-bans (frequencies (map :tradeBanState players))
-     :primary-groups (->> players
-                          (filter #(contains? % :groupName))
-                          (map :groupName)
-                          frequencies)
-     :games games
+     :primary-group (get groups "TF2Stadium Alpha")
      :intf2 (get games "Team Fortress 2")
      :vac (count (filter :vacBanned players))
      :vacced (vec (filter :vacBanned players))}))

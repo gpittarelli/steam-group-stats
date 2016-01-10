@@ -44,7 +44,8 @@
       (add-series members-axis time-axis "intf2" "In TF2")
       (add-series members-axis time-axis "trade-bans" "Trade Banned")
       (add-series members-axis time-axis "vac" "VAC Banned")
-      (add-series members-axis time-axis "limited_accounts" "Limited Account"))
+      (add-series members-axis time-axis "limited_accounts" "Limited Account")
+      (add-series members-axis time-axis "primary_group" "TF2SAlpha is Primary Group"))
 
     (doto chart
       (.setMargins 50 40 10 100)
@@ -72,5 +73,4 @@
   (let [svg (js/dimple.newSvg "body" "100%" 400)
         data (:body (<! (http/get "/api/data")))]
     (println (-> data first keys))
-    (println (-> data :vacced))
     (render svg data)))
