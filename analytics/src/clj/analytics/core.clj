@@ -13,31 +13,37 @@
   (:gen-class))
 
 (defn- json-read [str]
-  (json/read-str str :key-fn keyword))
+  (try
+    (json/read-str str :key-fn keyword)
+    (catch java.io.EOFException e
+      (println e)
+      nil)))
 
 (defn- analyze [data]
-  (let [players (vals (:players data))
-        games (->> players
-                   (filter #(contains? % :gameName))
-                   (map :gameName)
-                   frequencies)
-        groups (->> players
-                    (filter #(contains? % :groupName))
-                    (map :groupName)
-                    frequencies)]
-    {:online (:membersOnline data)
-     :total (:memberCount data)
-     :ingame (:membersInGame data)
-     :time (:time data)
-     :player-states (frequencies (map :onlineState players))
-     :profile-states (frequencies (map :privacyState players))
-     :visibility-states (frequencies (map :visibilityState players))
-     :limited-accounts (frequencies (map :isLimitedAccount players))
-     :trade-bans (frequencies (map :tradeBanState players))
-     :primary-group (get groups "TF2Stadium Alpha")
-     :intf2 (get games "Team Fortress 2")
-     :vac (count (filter :vacBanned players))
-     :vacced (vec (filter :vacBanned players))}))
+  (if (nil? data)
+    nil
+    (let [players (vals (:players data))
+          games (->> players
+                     (filter #(contains? % :gameName))
+                     (map :gameName)
+                     frequencies)
+          groups (->> players
+                      (filter #(contains? % :groupName))
+                      (map :groupName)
+                      frequencies)]
+      {:online (:membersOnline data)
+       :total (:memberCount data)
+       :ingame (:membersInGame data)
+       :time (:time data)
+       :player-states (frequencies (map :onlineState players))
+       :profile-states (frequencies (map :privacyState players))
+       :visibility-states (frequencies (map :visibilityState players))
+       :limited-accounts (frequencies (map :isLimitedAccount players))
+       :trade-bans (frequencies (map :tradeBanState players))
+       :primary-group (get groups "TF2Stadium Alpha")
+       :intf2 (get games "Team Fortress 2")
+       :vac (count (filter :vacBanned players))
+       :vacced (vec (filter :vacBanned players))})))
 
 (def ^:private results (atom {}))
 
